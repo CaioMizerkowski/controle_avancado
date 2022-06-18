@@ -17,7 +17,7 @@ print(f'Número de pontos: {npts}')
 
 phi = np.ones([npts,4]) # Inicia a matriz Phi para 4 parametros
 for j in range(npts): # Loop para preencher a matriz Phi
-    if j <= 2:
+    if j < 2:
         y1 = y[0]
         y2 = y[0]
         u1 = 0
