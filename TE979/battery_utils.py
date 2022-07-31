@@ -1,12 +1,8 @@
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 import polars as ps
 import pandas as pd
 import numpy as np
 import json
-
-with open('../data/coef.json', 'r') as f:
-    coef = json.load(f)
-I = '100A'
 
 WS = pd.read_excel('./Tensão_vs_SoC_C100.xlsx')
 df_soc = ps.DataFrame(WS)
@@ -15,7 +11,7 @@ argmin = df_soc['SoC'][:500].to_numpy().argmin()
 df_soc = df_soc[argmin:]
 argmax = df_soc['SoC'].to_numpy().argmax()
 
-def soc_inf():
+def v_inf():
     inf = df_soc[argmax:].unique().sort(by='SoC').clone()
     inf = inf[370:34693]
     
@@ -25,7 +21,7 @@ def soc_inf():
     cs_inf = CubicSpline(soc, v)
     return cs_inf
 
-def soc_sup():
+def v_sup():
     sup = df_soc[362:argmax].unique().clone()
     sup.sort(by='SoC', in_place=True)
     
@@ -35,43 +31,49 @@ def soc_sup():
     cs_sup = CubicSpline(soc, v)
     return cs_sup
 
-def soc_mid():
-    cs_inf = soc_inf()
-    cs_sup = soc_sup()
+def v_mid():
+    cs_inf = v_inf()
+    cs_sup = v_sup()
     
     return lambda soc: (cs_sup(soc)+cs_inf(soc))/2
 
-def cs_r0():
-    v_max = [coef[I][c][11] for c in coef[I]]
-    soc = soc_mid()(v_max)[-1:0:-1]
-    x = np.array([coef[I][c][4] for c in coef[I]])[-1:0:-1]
-    cs = CubicSpline(soc, x)
-    return cs
+def cs_base():
+    indexes = dict()
+    I = '100A'
 
-def cs_r1():
-    v_max = [coef[I][c][11] for c in coef[I]]
-    soc = soc_mid()(v_max)[-1:0:-1]
-    x = np.array([coef[I][c][5] for c in coef[I]])[-1:0:-1]
-    cs = CubicSpline(soc, x)
-    return cs
+    with open('../data/coef.json', 'r') as f:
+        coef = json.load(f)
+        v = [coef[I][c][11] for c in coef[I]][-1::-1]
 
-def cs_r2():
-    v_max = [coef[I][c][11] for c in coef[I]]
-    soc = soc_mid()(v_max)[-1:0:-1]
-    x = np.array([coef[I][c][6] for c in coef[I]])[-1:0:-1]
-    cs = CubicSpline(soc, x)
-    return cs
+    def inner(index):
+        nonlocal indexes
+        if index in indexes:
+            return indexes[index]
+        
+        with open('../data/coef.json', 'r') as f:
+            coef = json.load(f)
+        coef = np.array([coef[I][c][index] for c in coef[I]])[-1::-1]
 
-def cs_c1():
-    v_max = [coef[I][c][11] for c in coef[I]]
-    soc = soc_mid()(v_max)[-1:0:-1]
-    x = np.array([coef[I][c][7] for c in coef[I]])[-1:0:-1]
-    cs = CubicSpline(soc, x)
-    return cs
+        interpolation = PchipInterpolator(v, coef)
+        indexes[index] = interpolation
 
-def cs_c2():
-    v_max = [coef[I][c][11] for c in coef[I]]
-    soc = soc_mid()(v_max)[-1:0:-1]
-    x = np.array([coef[I][c][8] for c in coef[I]])[-1:0:-1]
-    cs = CubicSpline(soc, x)
-    return cs
+        return interpolation
+    
+    return inner
+
+cs_inner = cs_base()
+
+def cs_r0(v):
+    return cs_inner(5)(v)
+
+def cs_r1(v):
+    return cs_inner(6)(v)
+
+def cs_r2(v):
+    return cs_inner(7)(v)
+
+def cs_c1(v):
+    return cs_inner(8)(v)
+
+def cs_c2(v):
+    return cs_inner(9)(v)
