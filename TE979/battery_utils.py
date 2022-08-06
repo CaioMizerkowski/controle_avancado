@@ -40,10 +40,8 @@ def v_mid():
 def cs_base():
     indexes = dict()
     I = '100A'
-
-    with open('../data/coef.json', 'r') as f:
-        coef = json.load(f)
-        v = [coef[I][c][11] for c in coef[I]][-1::-1]
+    soc = np.array([0.99992121, 0.89972373, 0.80011121, 0.70018156, 0.59969705,
+                    0.49886181, 0.39787608, 0.29648346, 0.19333107, 0.08972434])[-1::-1]
 
     def inner(index):
         nonlocal indexes
@@ -54,7 +52,7 @@ def cs_base():
             coef = json.load(f)
         coef = np.array([coef[I][c][index] for c in coef[I]])[-1::-1]
 
-        interpolation = PchipInterpolator(v, coef)
+        interpolation = CubicSpline(soc, coef)
         indexes[index] = interpolation
 
         return interpolation
@@ -63,17 +61,17 @@ def cs_base():
 
 cs_inner = cs_base()
 
-def cs_r0(v):
-    return cs_inner(5)(v)
+def cs_r0(soc):
+    return cs_inner(5)(soc)
 
-def cs_r1(v):
-    return cs_inner(6)(v)
+def cs_r1(soc):
+    return cs_inner(6)(soc)
 
-def cs_r2(v):
-    return cs_inner(7)(v)
+def cs_r2(soc):
+    return cs_inner(7)(soc)
 
-def cs_c1(v):
-    return cs_inner(8)(v)
+def cs_c1(soc):
+    return cs_inner(8)(soc)
 
-def cs_c2(v):
-    return cs_inner(9)(v)
+def cs_c2(soc):
+    return cs_inner(9)(soc)
