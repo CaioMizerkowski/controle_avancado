@@ -65,6 +65,7 @@ if identificacao:
         if np.abs(min_erro) > np.abs(np.mean(erros[100:])):
             A_min = A
             min_erro = np.mean(erros[100:])
+            print(f"Novo menor erro: {min_erro:.03f} com A = {A_min:0.03f}")
             if np.abs(min_erro) < 0.01:
                 break
 
