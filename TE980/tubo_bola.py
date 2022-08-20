@@ -2,19 +2,29 @@ import RPi.GPIO as gpio
 from time import time, sleep
 from controlador import controler
 import numpy as np
+import sys
 
+identificacao = True
+A = 0.5
+
+if len(sys.argv) > 1:
+    identificacao = False
+    A = sys.argv[1]
+
+# Pinos
 pin_out = 12
+gpio_TRIGGER = 32
+gpio_ECHO = 36
+
 frequency = 60
 start_dc = 10
 target = 30.0
-gpio_TRIGGER = 32
-gpio_ECHO = 36
+
 
 gpio.setmode(gpio.BOARD)
 gpio.setup(gpio_TRIGGER, gpio.OUT)
 gpio.setup(gpio_ECHO, gpio.IN)
 gpio.setup(pin_out, gpio.OUT)
-
 
 def distance():
     # set Trigger to HIGH
@@ -38,13 +48,10 @@ def distance():
     return distance
 
 
-A = 0.995
-
 control = controler(A)
 fan = gpio.PWM(pin_out, frequency)
 fan.start(start_dc)
 
-identificacao = True
 if identificacao:
     print("Identificação")
     min_erro = 100
@@ -77,9 +84,12 @@ if identificacao:
     _ = input(f"Sistema identificado com A = {A:.04f}")
 
 control = controler(A)
-while True:
-    value = distance()
-    update = control.controlador(value, target)
-    print(f"distancia: {value:0.2f}cm e pid: {update}")
-    fan.ChangeDutyCycle(max(min(update, 100), 0))
-    sleep(2 / frequency)
+try:
+    while True:
+        value = distance()
+        update = control.controlador(value, target)
+        print(f"distancia: {value:0.2f}cm e pid: {update}")
+        fan.ChangeDutyCycle(max(min(update, 100), 0))
+        sleep(2 / frequency)
+except:
+    gpio.cleanup()

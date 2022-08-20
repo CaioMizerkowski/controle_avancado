@@ -43,8 +43,8 @@ def v_mid():
     return lambda soc: (cs_sup(soc) + cs_inf(soc)) / 2
 
 
-def aproximacao_coef(soc, x0, x1):  # , x2):
-    coef = x0 + x1 * soc  # +x2*soc**2
+def aproximacao_coef(soc, x0, x1, x2):
+    coef = x0 + x1 * soc + x2 * soc**2
     return coef
 
 
@@ -75,7 +75,7 @@ def cs_base():
         with open("../data/coef.json", "r") as f:
             coef = json.load(f)
         coef = np.array([coef[I][c][index] for c in coef[I]])[-1::-1]
-        p0 = [0, 0]
+        p0 = [0, 0, 0]
         if index == 7:
             coef[3] = (coef[2] + coef[4]) / 2
         interpolation = curve_fit(
@@ -87,8 +87,11 @@ def cs_base():
             bounds=bounds,
         )[0]
         interpolation = partial(
-            aproximacao_coef, x0=interpolation[0], x1=interpolation[1]
-        )  # , x2=interpolation[2]) #, x3=interpolation[3])
+            aproximacao_coef,
+            x0=interpolation[0],
+            x1=interpolation[1],
+            x2=interpolation[2],
+        )
         indexes[index] = interpolation
 
         return interpolation
