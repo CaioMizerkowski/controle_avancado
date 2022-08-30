@@ -7,13 +7,21 @@ def random_sample(arr, size: int = 1):
     return arr[np.random.choice(arr.shape[0], size=size, replace=False)]
 
 
-class JADifferentialEvolution():
-    def __init__(self, fitness, bounds, seed=np.random.choice(range(1000)),
-                 X=None, G=1000, mutation=0.75, recombination=0.75):
+class JADifferentialEvolution:
+    def __init__(
+        self,
+        fitness,
+        bounds,
+        seed=np.random.choice(range(1000)),
+        X=None,
+        G=1000,
+        mutation=0.75,
+        recombination=0.75,
+    ):
         self._bounds = bounds
         self._dim = bounds.shape[0]
         self._fitness = fitness
-        self._pop_size = self._dim*15
+        self._pop_size = self._dim * 15
 
         self._c = 0.1
         self._sucess_idx = np.array([], dtype=int)
@@ -43,25 +51,25 @@ class JADifferentialEvolution():
         self._shape = self.X.shape
 
         self._p = 0.1
-        self._P = int(np.round(self._p*self._pop_size))
+        self._P = int(np.round(self._p * self._pop_size))
 
     def _gen_cr(self):
         cr = np.random.normal(self._ucr, 0.1, size=self._pop_size)
         self._cr = cr.clip(0, 1)
 
     def _gen_f(self):
-        f = np.random.standard_cauchy(size=self._pop_size)*0.1+self._uf
+        f = np.random.standard_cauchy(size=self._pop_size) * 0.1 + self._uf
         self._f = f.clip(0, 1)
 
     def _update_ucr(self):
         if self._sucess_idx.size > 0:
             scr = self._cr[self._sucess_idx]
-            self._ucr = (1-self._c)*self._ucr+self._c*scr.mean()
+            self._ucr = (1 - self._c) * self._ucr + self._c * scr.mean()
 
     def _update_uf(self):
         if self._sucess_idx.size > 0:
             sf = self._f[self._sucess_idx]
-            self._uf = (1-self._c)*self._uf+self._c*(sum(sf**2)/sf.sum())
+            self._uf = (1 - self._c) * self._uf + self._c * (sum(sf**2) / sf.sum())
 
     def _check_bound(self, u):
         for idx, k in enumerate(u):
@@ -87,27 +95,25 @@ class JADifferentialEvolution():
         pb = random_sample(self.P)[0]
         x = self.X[self._idx]
         f = self._f[self._idx]
-        return x+f*(pb-x)+f*(x1-x2)
+        return x + f * (pb - x) + f * (x1 - x2)
 
     def _recombination(self, x, v):
         u = np.zeros(shape=v.shape)
         cidx = np.random.randint(0, self._dim)
         cr = self._cr[self._idx]
         for idx, (x0, v0) in enumerate(zip(x, v)):
-            u[idx] = v0 if np.random.uniform(
-            ) < cr or idx == cidx else x0
+            u[idx] = v0 if np.random.uniform() < cr or idx == cidx else x0
         return u
 
     def _gen_p_bests(self):
-        idx_p = self.X_values.argpartition(self._P)[:self._P]
+        idx_p = self.X_values.argpartition(self._P)[: self._P]
         self.P = self.X[idx_p, :]
 
     def _increment_archive(self, x):
         self.A = np.concatenate([self.A.copy(), [x]])
 
     def _clean_archive(self):
-        self.A = self.A[np.unique(self.A, axis=0, return_index=True)[
-            1].sort()][0]
+        self.A = self.A[np.unique(self.A, axis=0, return_index=True)[1].sort()][0]
         if self.A.shape[0] > self._pop_size:
             self.A = random_sample(self.A, size=self._pop_size)
 
@@ -128,8 +134,7 @@ class JADifferentialEvolution():
             for self._idx, x in enumerate(self.X):
                 v = self._mutation(x)
                 u = self._recombination(x, v)
-                X_values_new[self._idx], X_new[self._idx] = self._selection(
-                    x, u)
+                X_values_new[self._idx], X_new[self._idx] = self._selection(x, u)
 
             self.X = X_new.copy()
             self.X_values = X_values_new.copy()
@@ -154,11 +159,13 @@ class JADifferentialEvolution():
             np.random.seed(self._seed)
             self.X = np.zeros(shape=(self._pop_size, self._dim))
             for i in range(self._dim):
-                self.X.T[i] = np.random.uniform(low=self._bounds[i][0],
-                                                high=self._bounds[i][1],
-                                                size=(self._pop_size))
+                self.X.T[i] = np.random.uniform(
+                    low=self._bounds[i][0],
+                    high=self._bounds[i][1],
+                    size=(self._pop_size),
+                )
         self.X_values = np.array(list(map(self._fitness, self.X)))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
